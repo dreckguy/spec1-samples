@@ -1,29 +1,37 @@
 #!/usr/bin/env bash
 
-# Stop Script on Error
-set -e
+# For Debugging (print env. variables, define command tracing)
+# set -o xtrace
+# env
+# set
 
-# For Debugging (print env. variables into a file)  
-printenv > /var/log/colony-vars-"$(basename "$BASH_SOURCE" .sh)".txt
- 
+echo "****************************************************************"
+echo "Updating System"
+echo "****************************************************************"
 apt-get update -y
 
-# Preparing MYSQL for silent installation
+
+echo "****************************************************************"
+echo "Preparing MYSQL for silent installation"
+echo "****************************************************************"
 export DEBIAN_FRONTEND="noninteractive"
 echo "mysql-server mysql-server/root_password password $DB_PASS" | debconf-set-selections
 echo "mysql-server mysql-server/root_password_again password $DB_PASS" | debconf-set-selections
 
 
-# Installing MYSQL
+echo "****************************************************************"
+echo "Installing MYSQL"
+echo "****************************************************************"
 apt-get install mysql-server -y
-#apt-get install mysql-client -y
+apt-get install mysql-client -y
 
 
-# Setting up local permission file
+echo "****************************************************************"
+echo "Setting up local permission file"
+echo "****************************************************************"
 mkdir /home/pk;
 bash -c "cat >> /home/pk/my.cnf" <<EOL
 [client]
-
 ## for local server use localhost
 host=localhost
 user=$DB_USER
@@ -33,13 +41,19 @@ password=$DB_PASS
 pager=/usr/bin/less
 EOL
 
-# Creating database
+echo "****************************************************************"
+echo "Creating database"
+echo "****************************************************************"
 mysql --defaults-extra-file=/home/pk/my.cnf << EOF
 CREATE DATABASE ${DB_NAME};
 EOF
 
-# Configuring Remote Connection Access: updating sql config to not bind to a specific address
+echo "****************************************************************"
+echo "Configuring Remote Connection Access"
+echo "****************************************************************"
+# updating sql config to not bind to a specific address
 sed -i 's/bind-address/#bind-address/g' /etc/mysql/mysql.conf.d/mysqld.cnf
+systemctl restart mysql.service
 
 # granting db access
 mysql --defaults-extra-file=/home/pk/my.cnf << EOF
