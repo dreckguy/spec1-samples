@@ -1,13 +1,4 @@
-# A Java Spring website deployed on a TomCat server and a
-# MySQL database deployed on two EC2 instances
-#
-#       [Front End] (Java, Tomcat)
-#            |
-#       [Back End]  (MySQL)
-#
-# Application source code:
-# https://github.com/cloudshell-colony/sample_java_spring_source
-#
+
 ---
 spec_version: 1
 kind: blueprint
@@ -20,9 +11,7 @@ metadata:
 clouds:
   - aws: eu-west-1
 
-# These are the blueprint parameters and their default values.
-# The values can be changed when creating a sandbox based on this
-# blueprint.
+
 inputs:
   - DB_USER: root  # Used to define the db admin account
   - DB_PASS:
@@ -42,5 +31,3 @@ applications:
         - DB_NAME: $DB_NAME
       # The website depends on MySQL and will start deploying only when
       # the database is ready
-      depends_on:
-        - mysql
