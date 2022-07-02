@@ -1,0 +1,680 @@
+Description: >
+  Triggered By Torque (Blueprint: spec1-in-spec2, Owner: ophir.h@quali.com) - A
+  Java Spring website deployed on a TomCat server and MySQL database
+Resources:
+  AppSubnet0:
+    Properties:
+      AvailabilityZone: !Select 
+        - 0
+        - !GetAZs ''
+      CidrBlock: 10.0.0.0/24
+      MapPublicIpOnLaunch: 'true'
+      Tags:
+        - Key: Name
+          Value: app-subnet-0
+      VpcId: !Ref VPC
+    Type: 'AWS::EC2::Subnet'
+  AppSubnet0RouteAssociation:
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref AppSubnet0
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  AppSubnet1:
+    Properties:
+      AvailabilityZone: !Select 
+        - 1
+        - !GetAZs ''
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: 'true'
+      Tags:
+        - Key: Name
+          Value: app-subnet-1
+      VpcId: !Ref VPC
+    Type: 'AWS::EC2::Subnet'
+  AppSubnet1RouteAssociation:
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref AppSubnet1
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  DNS:
+    Properties:
+      HostedZoneConfig:
+        Comment: 'hosted zone for sandbox: 6kk0c3nl8502c2'
+      Name: 6kk0c3nl8502c2.sandbox.com
+      VPCs:
+        - VPCId: !Ref VPC
+          VPCRegion: !Ref 'AWS::Region'
+    Type: 'AWS::Route53::HostedZone'
+  DNSRecordjavaspringwebsite:
+    Properties:
+      Comment: 'DNS name for instance: java-spring-website.'
+      HostedZoneId: !Ref DNS
+      Name: java-spring-website.6kk0c3nl8502c2.sandbox.com
+      ResourceRecords:
+        - !GetAtt 
+          - javaspringwebsiteNic
+          - PrimaryPrivateIpAddress
+      TTL: 20
+      Type: A
+    Type: 'AWS::Route53::RecordSet'
+  DNSRecordtorqueSidecar:
+    Properties:
+      Comment: 'DNS name for instance: torqueSidecar.'
+      HostedZoneId: !Ref DNS
+      Name: torqueSidecar.6kk0c3nl8502c2.sandbox.com
+      ResourceRecords:
+        - !GetAtt 
+          - torqueSidecarNic
+          - PrimaryPrivateIpAddress
+      TTL: 20
+      Type: A
+    Type: 'AWS::Route53::RecordSet'
+  DefaultSandboxSG:
+    Properties:
+      GroupDescription: >-
+        Simply attaching the empty security group(DefaultSandboxSG) to an
+        instance gives that instance permission to connect other instances
+      Tags:
+        - Key: Name
+          Value: sandbox default security group
+      VpcId: !Ref VPC
+    Type: 'AWS::EC2::SecurityGroup'
+  EmptyTG:
+    Properties:
+      Name: TG6kk0c3nl8502c2Empty
+      Port: 1
+      Protocol: HTTP
+      VpcId: !Ref VPC
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+  InternetGateway:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: internet-gateway
+    Type: 'AWS::EC2::InternetGateway'
+  Listener8080:
+    Properties:
+      Certificates: []
+      DefaultActions:
+        - TargetGroupArn: !Ref TG6kk0c3nl8502c2H0aa79ec014
+          Type: forward
+      LoadBalancerArn: !Ref MainALB
+      Port: 8080
+      Protocol: HTTP
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+  MainALB:
+    DependsOn: VpcInternetGatewayAttachment
+    Properties:
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref MainALBSG
+      Subnets:
+        - !Ref AppSubnet0
+        - !Ref AppSubnet1
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+  MainALBSG:
+    Properties:
+      GroupDescription: Attaching an empty security group to the ALB to give instances an access
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          Description: public port access
+          FromPort: 8080
+          IpProtocol: tcp
+          ToPort: 8080
+      Tags:
+        - Key: Name
+          Value: MainALBSG
+      VpcId: !Ref VPC
+    Type: 'AWS::EC2::SecurityGroup'
+  MngSubnet:
+    Properties:
+      CidrBlock: 10.0.3.0/24
+      MapPublicIpOnLaunch: 'true'
+      Tags:
+        - Key: Name
+          Value: mng-subnet
+      VpcId: !Ref VPC
+    Type: 'AWS::EC2::Subnet'
+  MngSubnetRouteAssociation:
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref MngSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  PublicRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: public-route-table
+      VpcId: !Ref VPC
+    Type: 'AWS::EC2::RouteTable'
+  RouteToInternet:
+    DependsOn: VpcInternetGatewayAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTable
+    Type: 'AWS::EC2::Route'
+  TG6kk0c3nl8502c2H0aa79ec014:
+    Properties:
+      Name: TG6kk0c3nl8502c2H0aa79ec014
+      Port: 8080
+      Protocol: HTTP
+      Tags:
+        - Key: torque-sandbox-id
+          Value: 6kk0c3nl8502c2
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: '60'
+      Targets:
+        - Id: !Ref javaspringwebsite
+      VpcId: !Ref VPC
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+  VPC:
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: 'true'
+      EnableDnsSupport: 'true'
+      Tags:
+        - Key: Name
+          Value: vpc
+    Type: 'AWS::EC2::VPC'
+  VpcInternetGatewayAttachment:
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+  javaspringwebsite:
+    DependsOn:
+      - DNSRecordjavaspringwebsite
+      - DNSRecordtorqueSidecar
+    Properties:
+      ImageId: ami-f90a4880
+      InstanceType: t2.nano
+      KeyName: keypair-6kk0c3nl8502c2
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          NetworkInterfaceId: !Ref javaspringwebsiteNic
+      Tags:
+        - Key: Name
+          Value: java-spring-website
+        - Key: torque-app-name
+          Value: java-spring-website
+        - Key: torque-external-elb-dsn
+          Value: !GetAtt 
+            - MainALB
+            - DNSName
+        - Key: torque-external-ports
+          Value: 'java-spring-website:8080'
+        - Key: torque-instance-logical-id
+          Value: c7c6310bc8904eb2be76b091dc562f58
+        - Key: torque-internal-ports
+          Value: 'java-spring-website:8080'
+      UserData: !Base64 
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/sh
+            - >
+              echo "[cs18][$(date +"%T.%3N")] start of java-spring-website
+              user-data";
+            - |+
+
+              which wget > /dev/null;
+              if [ $? -ne 0 ]; then
+                  echo "===== wget is not installed =====";
+              fi;
+              which apt > /dev/null;
+              if [ $? -ne 0 ]; then
+                  echo "===== apt is not installed =====";
+              fi;
+              which yum > /dev/null;
+              if [ $? -ne 0 ]; then
+                  echo "===== yum is not installed =====";
+              fi;
+
+            - |+
+
+            - |
+              if [ -f "/etc/alpine-release" ]; then 
+            - |2
+               apk add coreutils;which wget > /dev/null; if [ $? -eq 0 ]; then ((wget --help | grep -q -e "--recursive") > /dev/null 2>&1 ||  apk add -q -f wget) ;else  apk add -q -f wget ;fi;
+            - |
+              elif [ -f "/etc/redhat-release" ]; then 
+            - |
+              which wget > /dev/null || (yum install wget -y);
+            - |
+              elif [ -f "/etc/system-release" ]; then 
+            - |
+              which wget > /dev/null || (yum install wget -y);
+            - |
+              elif [ -f "/etc/os-release" ]; then 
+            - >
+              which wget > /dev/null || (apt-get update && apt-get -y install
+              wget); sleep 5; which wget > /dev/null || (apt-get update &&
+              apt-get -y install wget);
+            - |
+              elif [ -f "/etc/lsb-release" ]; then 
+            - >
+              which wget > /dev/null || (apt-get update && apt-get -y install
+              wget); sleep 5; which wget > /dev/null || (apt-get update &&
+              apt-get -y install wget);
+            - |
+              elif [ -f "/etc/yum" ]; then 
+            - |
+              which wget > /dev/null || (yum install wget -y);
+            - |
+              fi;
+            - |+
+
+            - >
+
+               wget https://torque-production-public.s3-eu-central-1.amazonaws.com/helper/helper_v001.sh -T 5 -t 2 -O /usr/local/bin/torque.sh;
+              chmod +x /usr/local/bin/torque.sh;
+
+              type torque.sh> /dev/null 2>&1 || echo "torque.sh not found in
+              PATH";
+
+              echo "export
+              COLONY_SIDECAR_API="http://torqueSidecar.6kk0c3nl8502c2.sandbox.com:4000/""
+              >> /etc/environment;
+                          
+            - >
+              echo "[cs18][$(date +"%T.%3N")] going to check if sidecar api is
+              ready";
+            - >
+              echo "[$(date +"%T.%3N")] waiting for sidecar dns resolution";
+              until DNS_RESOLUTION_RESULT=$(getent hosts
+              torqueSidecar.6kk0c3nl8502c2.sandbox.com) ; do echo "[$(date
+              +"%T.%3N")] sidecar dns not resolved, waiting ..."; sleep 10;
+              done;echo "[$(date +"%T.%3N")] sidecar dns resolved!"; echo
+              "$DNS_RESOLUTION_RESULT" >> /etc/hosts;echo "[$(date +"%T.%3N")]
+              waiting for sidecar api"; while [ 0 ]; do
+              config_start_status=$(wget --tries=1 -T 10 -nv -O-
+              torqueSidecar.6kk0c3nl8502c2.sandbox.com:4000/ 2>&1); if [ "$?"
+              -eq "0" ]; then echo "[$(date +"%T.%3N")] sidecar api is ready";
+              break; fi; echo "[$(date +"%T.%3N")] sidecar api is not ready
+              yet";echo $config_start_status; sleep 10; done;
+            - >
+              echo "[cs18][$(date +"%T.%3N")] going to check if sidecar ftp is
+              ready";
+            - >
+              echo "fetching from sidecar text.txt.."
+
+              while true;do 
+
+              wget -T 15 -nH
+              ftp://torqueSidecar.6kk0c3nl8502c2.sandbox.com/text.txt -O
+              /root/text.txt && break;
+
+              sleep 1;
+
+              done;
+            - >
+              echo "fetching from sidecar
+              6kk0c3nl8502c2_1e11785db559483c84e350905643d28a.userdata.."
+
+              while true;do 
+
+              wget -T 15 -nH
+              ftp://torqueSidecar.6kk0c3nl8502c2.sandbox.com/6kk0c3nl8502c2_1e11785db559483c84e350905643d28a.userdata
+              -O /root/6kk0c3nl8502c2_1e11785db559483c84e350905643d28a.userdata
+              && break;
+
+              sleep 1;
+
+              done;
+            - >
+              chmod +x
+              /root/6kk0c3nl8502c2_1e11785db559483c84e350905643d28a.userdata
+            - |
+              /root/6kk0c3nl8502c2_1e11785db559483c84e350905643d28a.userdata
+            - >
+              echo "[cs18][$(date +"%T.%3N")] end of java-spring-website
+              user-data";
+    Type: 'AWS::EC2::Instance'
+  javaspringwebsiteNic:
+    Properties:
+      GroupSet:
+        - !Ref javaspringwebsiteSG
+        - !Ref DefaultSandboxSG
+      SubnetId: !Ref AppSubnet0
+    Type: 'AWS::EC2::NetworkInterface'
+  javaspringwebsiteSG:
+    Properties:
+      GroupDescription: java-spring-website Security Group
+      SecurityGroupEgress: []
+      SecurityGroupIngress:
+        - IpProtocol: '-1'
+          SourceSecurityGroupId: !Ref torqueSidecarSG
+        - FromPort: 22
+          IpProtocol: tcp
+          SourceSecurityGroupId: !Ref torqueDebugServiceSG
+          ToPort: 22
+        - FromPort: 3389
+          IpProtocol: tcp
+          SourceSecurityGroupId: !Ref torqueDebugServiceSG
+          ToPort: 3389
+        - FromPort: 8080
+          IpProtocol: tcp
+          SourceSecurityGroupId: !Ref MainALBSG
+          ToPort: 8080
+        - FromPort: 8080
+          IpProtocol: tcp
+          SourceSecurityGroupId: !Ref DefaultSandboxSG
+          ToPort: 8080
+      VpcId: !Ref VPC
+    Type: 'AWS::EC2::SecurityGroup'
+  sidecarInstanceProfile:
+    Properties:
+      InstanceProfileName: torque-sandbox-sidecar-role-6kk0c3nl8502c2
+      Path: /torque/1ba6c10d-fac8-48d5-97c3-8b14a20a50ba/sandbox/6kk0c3nl8502c2/
+      Roles:
+        - !Ref sidecarRole
+    Type: 'AWS::IAM::InstanceProfile'
+  sidecarRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess'
+        - 'arn:aws:iam::aws:policy/AWSCloudFormationReadOnlyAccess'
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+      Path: /torque/1ba6c10d-fac8-48d5-97c3-8b14a20a50ba/sandbox/6kk0c3nl8502c2/
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:UpdateItem'
+                Condition:
+                  'ForAllValues:StringEquals':
+                    'dynamodb:LeadingKeys': 6kk0c3nl8502c2
+                Effect: Allow
+                Resource:
+                  - >-
+                    arn:aws:dynamodb:*:*:table/torque-sandboxes-datatable-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba
+                  - 'arn:aws:dynamodb:*:*:table/torque-sandboxes-datatable'
+            Version: 2012-10-17
+          PolicyName: TorqueSandboxDynamoDBAccess
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - 's3:Get*'
+                  - 's3:List*'
+                  - 's3:Put*'
+                Effect: Allow
+                Resource:
+                  - 'arn:aws:s3:::torque-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba'
+                  - 'arn:aws:s3:::torque-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba/*'
+            Version: 2012-10-17
+          PolicyName: TorqueSandboxS3Access
+      RoleName: torque-sandbox-sidecar-role-6kk0c3nl8502c2
+    Type: 'AWS::IAM::Role'
+  torqueDebugService:
+    Properties:
+      IamInstanceProfile: torque-instance-profile-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba
+      ImageId: ami-047b1aebadba72929
+      InstanceType: t3.medium
+      KeyName: keypair-6kk0c3nl8502c2
+      SecurityGroupIds:
+        - !Ref torqueDebugServiceSG
+      SubnetId: !Ref MngSubnet
+      Tags:
+        - Key: Name
+          Value: torqueDebugService
+        - Key: torque-app-name
+          Value: torqueDebugService
+      UserData: !Base64 
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash
+            - |
+              echo "[cs18][$(date +"%T.%3N")] start of qualiY user-data";
+            - >
+              wget
+              https://colony-qualiy-artifacts.s3.eu-west-2.amazonaws.com/versions/1_1_0/qualiy_userdata.sh
+            - |
+              chmod +x qualiy_userdata.sh
+            - >
+              sudo
+              SIDECAR_API_URL=http://torqueSidecar.6kk0c3nl8502c2.sandbox.com:4000
+              QUALIY_STATUS_UPDATER_URL=https://colony-qualiy-artifacts.s3.eu-west-2.amazonaws.com/versions/1_1_0/qualiy_status_updater.sh
+              ./qualiy_userdata.sh
+              aws_key_name=sandbox-6kk0c3nl8502c2/keypair-6kk0c3nl8502c2.pem
+              aws_bucket_name=torque-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba
+              aws_region=eu-west-1 turn-off
+            - >
+              echo "[cs18][$(date +"%T.%3N")] disabling the apt auto-upgrades
+              service";
+            - >
+              sed -i 's/Lists "1"/Lists "0"/'
+              /etc/apt/apt.conf.d/20auto-upgrades
+            - |
+              echo "[cs18][$(date +"%T.%3N")] end of qualiY user-data.";
+    Type: 'AWS::EC2::Instance'
+  torqueDebugServiceSG:
+    Properties:
+      GroupDescription: torqueDebugService Security Group
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          Description: public port access
+          FromPort: 8080
+          IpProtocol: tcp
+          ToPort: 8080
+      VpcId: !Ref VPC
+    Type: 'AWS::EC2::SecurityGroup'
+  torqueSidecar:
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: 'true'
+            Encrypted: 'false'
+            VolumeSize: 18
+      IamInstanceProfile: !Ref sidecarInstanceProfile
+      ImageId: ami-06453e321410d9a3d
+      InstanceType: t3.medium
+      KeyName: keypair-6kk0c3nl8502c2
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          NetworkInterfaceId: !Ref torqueSidecarNic
+      Tags:
+        - Key: Name
+          Value: torqueSidecar
+        - Key: torque-app-name
+          Value: torqueSidecar
+      UserData: !Base64 
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash
+            - |
+              echo "[cs18][$(date +"%T.%3N")] start of sidecar user-data.";
+            - region_name=
+            - !Ref 'AWS::Region'
+            - |+
+
+            - |
+              colony_environment=qtorque
+            - |
+              colony_application=sidecar
+            - |
+              colony_sandbox_id=6kk0c3nl8502c2
+            - |
+              logz_token=xmJURUHwcxUGtgPpHHnhbTFqfLDBzUPi
+            - |
+              ##!/bin/bash
+            - |
+              #colony_environment=env_name
+            - |
+              #colony_sandbox_id=sandbox_id
+            - |
+              #colony_application=application_name
+            - |
+              #logz_token=TOKEN
+            - |
+              #logz_event_type=event_type
+            - |+
+
+            - |
+              error_report() {
+            - |
+              echo "$1"
+            - |
+              send_log "$1" ERROR
+            - |
+              }
+            - |+
+
+            - |
+              info_report() {
+            - |
+              send_log "$1" INFO
+            - |
+              }
+            - |+
+
+            - |
+              generate_post_data(){
+            - |
+              message="$1"
+            - |
+              log_level="$2"
+            - |
+              message="${message//\"/\\\"}"
+            - |
+              cat <<EOF
+            - |
+              {
+            - |2
+                "colony.environment": "$colony_environment",
+            - |2
+                "colony.sandbox_id": "$colony_sandbox_id",
+            - |2
+                "colony.application": "$colony_application",
+            - |2
+                "colony.level": "$log_level",
+            - |2
+                "message": "$message"
+            - |
+              }
+            - |
+              EOF
+            - |
+              }
+            - |+
+
+            - |+
+
+            - |
+              send_log() {
+            - |
+              data=$(generate_post_data "$1" "$2")
+            - |
+              data=$(echo "$data" | tr "\n\r" " ")
+            - >
+              curl -d "$data" -H "Content-type:application/json"
+              --data-urlencode -XPOST
+              https://http-bulk-listener.logz.io:443/?token=$logz_token
+            - |
+              }
+            - |+
+
+            - |
+              log_command(){
+            - |
+              err=$($1 2>&1)
+            - |
+              if [[ $? -ne 0 ]]; then
+            - |2
+                error_report "$err"
+            - |
+              fi
+            - |
+              }
+            - sandbox_vpc=
+            - !Ref VPC
+            - |+
+
+            - |
+              bash -c "cat > ~/sidecar.sh" <<"EOL"
+            - >+
+              #!/bin/bash
+
+              ~/restart_filebeat.sh
+
+              aws s3 cp
+              s3://torque-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba/sandbox-6kk0c3nl8502c2/6kk0c3nl8502c2.userdata
+              ~/sidecar_userdata.sh
+
+              chmod +x ~/sidecar_userdata.sh
+
+              region_name=$region_name ~/sidecar_userdata.sh
+
+            - |
+              EOL
+            - |
+              chmod +x ~/sidecar.sh
+            - >
+              docker login -u qualitorque -p
+              a25e930b-47be-41c3-8104-988f85e97a0e
+            - |
+              retry_count=10
+            - |
+              for i in $(seq 1 $retry_count); do
+            - >
+              docker_run_output=$(docker run --name sidecar -d --net=host -p
+              21:21 -p 4000:4000 -v "/root/sidecar.sh:/sidecar.sh" -e
+              region_name=$region_name -e virtual_network_id=$sandbox_vpc -e
+              COLONY_SANDBOX_ID=6kk0c3nl8502c2 -e COLONY_PRODUCTION_ID= -e
+              COLONY_ENVIRONMENT=qtorque -e
+              LOGZIO_TOKEN=xmJURUHwcxUGtgPpHHnhbTFqfLDBzUPi -e BRANDING=torque
+              quali/sidecar:0.0.3.928 bash -c "/sidecar.sh 2>&1 | tee
+              /var/log/sidecar-userdata-output.log" 2>&1)
+            - >
+              if [[ $? -ne 0 ]]; then error_report "Failed to launch sidecar
+              container. try $i/$retry_count
+
+              docker run output: $docker_run_output
+
+              apt list | grep docker: $(apt list | grep docker 2>&1)
+
+              env: $(env)
+
+              ls -l /usr/local/bin/docker: $(ls -l /usr/local/bin/docker
+              2>&1)";else break;fi
+            - |
+              sleep 2; done;
+            - |
+              echo "[cs18][$(date +"%T.%3N")] end of sidecar user-data.";
+    Type: 'AWS::EC2::Instance'
+  torqueSidecarNic:
+    Properties:
+      GroupSet:
+        - !Ref torqueSidecarSG
+        - !Ref DefaultSandboxSG
+      SubnetId: !Ref MngSubnet
+    Type: 'AWS::EC2::NetworkInterface'
+  torqueSidecarSG:
+    Properties:
+      GroupDescription: torqueSidecar Security Group
+      SecurityGroupIngress:
+        - IpProtocol: '-1'
+          SourceSecurityGroupId: !Ref DefaultSandboxSG
+        - FromPort: 22
+          IpProtocol: tcp
+          SourceSecurityGroupId: !Ref torqueDebugServiceSG
+          ToPort: 22
+        - FromPort: 4000
+          IpProtocol: tcp
+          SourceSecurityGroupId: !Ref torqueDebugServiceSG
+          ToPort: 4000
+      VpcId: !Ref VPC
+    Type: 'AWS::EC2::SecurityGroup'
