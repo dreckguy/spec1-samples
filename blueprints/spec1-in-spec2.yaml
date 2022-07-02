@@ -1,13 +1,4 @@
-# A Java Spring website deployed on a TomCat server and a
-# MySQL database deployed on two EC2 instances
-#
-#       [Front End] (Java, Tomcat)
-#            |
-#       [Back End]  (MySQL)
-#
-# Application source code:
-# https://github.com/cloudshell-colony/sample_java_spring_source
-#
+
 ---
 spec_version: 1
 kind: blueprint
