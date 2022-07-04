@@ -46,16 +46,6 @@ source:
 configuration:
   # The initialization script is intended to install
   # app prerequisite and initialize the OS
-  initialization:
-    script: java-spring-website.sh
-  # The command is the actual command used to start
-  # the application process
-  start:
-    command: >
-      systemctl restart tomcat8
-  # We validate the app is listening on
-  # the ports defined in the connectivity section
-  # to validate it is up
   healthcheck:
     script: hc.sh
     timeout: 180
