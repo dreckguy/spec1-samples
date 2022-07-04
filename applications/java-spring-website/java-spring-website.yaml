@@ -25,6 +25,13 @@ infrastructure:
     spec:
       aws:
         instance_type: t2.nano
+
+  connectivity:
+    external:
+      - port_info:
+          # Port 8080 will be opened externally to receive web requests
+          port: 8080
+
 source:
   os_type: linux
   # Images for AWS are provided per region
@@ -35,6 +42,7 @@ source:
       - id: ami-f90a4880
         region: eu-west-1
         username: ubuntu
+
 configuration:
   # The initialization script is intended to install
   # app prerequisite and initialize the OS
