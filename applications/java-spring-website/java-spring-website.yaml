@@ -41,6 +41,7 @@ configuration:
   # app prerequisite and initialize the OS
   healthcheck:
     script: hc.sh
+  
     timeout: 180
 debugging:
   connection_protocol: SSH
