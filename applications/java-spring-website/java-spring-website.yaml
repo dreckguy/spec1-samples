@@ -25,13 +25,6 @@ infrastructure:
     spec:
       aws:
         instance_type: t2.nano
-
-  connectivity:
-    external:
-      - port_info:
-          # Port 8080 will be opened externally to receive web requests
-          port: 8080
-
 source:
   os_type: linux
   # Images for AWS are provided per region
