@@ -228,8 +228,6 @@
         },
         "javaspringwebsite": {
             "DependsOn": [
-                "DNSRecordjavaspringwebsite",
-                "DNSRecordtorqueSidecar"
             ],
             "Properties": {
                 "ImageId": "ami-f90a4880",
@@ -256,43 +254,7 @@
                         "Key": "torque-instance-logical-id",
                         "Value": "bb82aa4b9ead4ddd813ed72cd2340616"
                     }
-                ],
-                "UserData": {
-                    "Fn::Base64": {
-                        "Fn::Join": [
-                            "",
-                            [
-                                "#!/bin/sh\n",
-                                "echo \"[cs18][$(date +\"%T.%3N\")] start of java-spring-website user-data\";\n",
-                                "\nwhich wget > /dev/null;\nif [ $? -ne 0 ]; then\n    echo \"===== wget is not installed =====\";\nfi;\nwhich apt > /dev/null;\nif [ $? -ne 0 ]; then\n    echo \"===== apt is not installed =====\";\nfi;\nwhich yum > /dev/null;\nif [ $? -ne 0 ]; then\n    echo \"===== yum is not installed =====\";\nfi;\n\n",
-                                "\n",
-                                "if [ -f \"/etc/alpine-release\" ]; then \n",
-                                " apk add coreutils;which wget > /dev/null; if [ $? -eq 0 ]; then ((wget --help | grep -q -e \"--recursive\") > /dev/null 2>&1 ||  apk add -q -f wget) ;else  apk add -q -f wget ;fi;\n",
-                                "elif [ -f \"/etc/redhat-release\" ]; then \n",
-                                "which wget > /dev/null || (yum install wget -y);\n",
-                                "elif [ -f \"/etc/system-release\" ]; then \n",
-                                "which wget > /dev/null || (yum install wget -y);\n",
-                                "elif [ -f \"/etc/os-release\" ]; then \n",
-                                "which wget > /dev/null || (apt-get update && apt-get -y install wget); sleep 5; which wget > /dev/null || (apt-get update && apt-get -y install wget);\n",
-                                "elif [ -f \"/etc/lsb-release\" ]; then \n",
-                                "which wget > /dev/null || (apt-get update && apt-get -y install wget); sleep 5; which wget > /dev/null || (apt-get update && apt-get -y install wget);\n",
-                                "elif [ -f \"/etc/yum\" ]; then \n",
-                                "which wget > /dev/null || (yum install wget -y);\n",
-                                "fi;\n",
-                                "\n",
-                                "\n wget https://torque-production-public.s3-eu-central-1.amazonaws.com/helper/helper_v001.sh -T 5 -t 2 -O /usr/local/bin/torque.sh;\nchmod +x /usr/local/bin/torque.sh;\ntype torque.sh> /dev/null 2>&1 || echo \"torque.sh not found in PATH\";\necho \"export COLONY_SIDECAR_API=\"http://torqueSidecar.2rocayktk402c2.sandbox.com:4000/\"\" >> /etc/environment;\n            \n",
-                                "echo \"[cs18][$(date +\"%T.%3N\")] going to check if sidecar api is ready\";\n",
-                                "echo \"[$(date +\"%T.%3N\")] waiting for sidecar dns resolution\"; until DNS_RESOLUTION_RESULT=$(getent hosts torqueSidecar.2rocayktk402c2.sandbox.com) ; do echo \"[$(date +\"%T.%3N\")] sidecar dns not resolved, waiting ...\"; sleep 10; done;echo \"[$(date +\"%T.%3N\")] sidecar dns resolved!\"; echo \"$DNS_RESOLUTION_RESULT\" >> /etc/hosts;echo \"[$(date +\"%T.%3N\")] waiting for sidecar api\"; while [ 0 ]; do config_start_status=$(wget --tries=1 -T 10 -nv -O- torqueSidecar.2rocayktk402c2.sandbox.com:4000/ 2>&1); if [ \"$?\" -eq \"0\" ]; then echo \"[$(date +\"%T.%3N\")] sidecar api is ready\"; break; fi; echo \"[$(date +\"%T.%3N\")] sidecar api is not ready yet\";echo $config_start_status; sleep 10; done;\n",
-                                "echo \"[cs18][$(date +\"%T.%3N\")] going to check if sidecar ftp is ready\";\n",
-                                "echo \"fetching from sidecar text.txt..\"\nwhile true;do \nwget -T 15 -nH ftp://torqueSidecar.2rocayktk402c2.sandbox.com/text.txt -O /root/text.txt && break;\nsleep 1;\ndone;\n",
-                                "echo \"fetching from sidecar 2rocayktk402c2_470565ff3a13444a9cb28f5a8015d204.userdata..\"\nwhile true;do \nwget -T 15 -nH ftp://torqueSidecar.2rocayktk402c2.sandbox.com/2rocayktk402c2_470565ff3a13444a9cb28f5a8015d204.userdata -O /root/2rocayktk402c2_470565ff3a13444a9cb28f5a8015d204.userdata && break;\nsleep 1;\ndone;\n",
-                                "chmod +x /root/2rocayktk402c2_470565ff3a13444a9cb28f5a8015d204.userdata\n",
-                                "/root/2rocayktk402c2_470565ff3a13444a9cb28f5a8015d204.userdata\n",
-                                "echo \"[cs18][$(date +\"%T.%3N\")] end of java-spring-website user-data\";\n"
-                            ]
-                        ]
-                    }
-                }
+                ]
             },
             "Type": "AWS::EC2::Instance"
         },
@@ -317,12 +279,6 @@
                 "GroupDescription": "java-spring-website Security Group",
                 "SecurityGroupEgress": [],
                 "SecurityGroupIngress": [
-                    {
-                        "IpProtocol": "-1",
-                        "SourceSecurityGroupId": {
-                            "Ref": "torqueSidecarSG"
-                        }
-                    },
                     {
                         "FromPort": 22,
                         "IpProtocol": "tcp",
@@ -375,24 +331,7 @@
                         "Key": "torque-app-name",
                         "Value": "torqueDebugService"
                     }
-                ],
-                "UserData": {
-                    "Fn::Base64": {
-                        "Fn::Join": [
-                            "",
-                            [
-                                "#!/bin/bash\n",
-                                "echo \"[cs18][$(date +\"%T.%3N\")] start of qualiY user-data\";\n",
-                                "wget https://colony-qualiy-artifacts.s3.eu-west-2.amazonaws.com/versions/1_1_0/qualiy_userdata.sh\n",
-                                "chmod +x qualiy_userdata.sh\n",
-                                "sudo SIDECAR_API_URL=http://torqueSidecar.2rocayktk402c2.sandbox.com:4000 QUALIY_STATUS_UPDATER_URL=https://colony-qualiy-artifacts.s3.eu-west-2.amazonaws.com/versions/1_1_0/qualiy_status_updater.sh ./qualiy_userdata.sh aws_key_name=sandbox-2rocayktk402c2/keypair-2rocayktk402c2.pem aws_bucket_name=torque-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba aws_region=eu-west-1 \n",
-                                "echo \"[cs18][$(date +\"%T.%3N\")] disabling the apt auto-upgrades service\";\n",
-                                "sed -i 's/Lists \"1\"/Lists \"0\"/' /etc/apt/apt.conf.d/20auto-upgrades\n",
-                                "echo \"[cs18][$(date +\"%T.%3N\")] end of qualiY user-data.\";\n"
-                            ]
-                        ]
-                    }
-                }
+                ]
             },
             "Type": "AWS::EC2::Instance"
         },
