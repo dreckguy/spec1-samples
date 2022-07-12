@@ -7,7 +7,9 @@
 
 # Check SSM agent:
 echo "***************************************************************"
-echo "check SSM agent"
+echo "che
+
+ck SSM agent"
 echo "*****************************************************************"
 sudo systemctl status snap.amazon-ssm-agent.amazon-ssm-agent.service
 
