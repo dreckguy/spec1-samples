@@ -5,6 +5,12 @@
 # env
 # set
 
+# Check SSM agent:
+echo "***************************************************************"
+echo "check SSM agent"
+echo "*****************************************************************"
+sudo systemctl status snap.amazon-ssm-agent.amazon-ssm-agent.service
+
 
 # Update packages and Upgrade system
 echo "****************************************************************"
@@ -58,5 +64,4 @@ cp sample_java_spring_source/artifacts/colony-java-spring-sample-1.0.0-BUILD-SNA
 
 
 systemctl start tomcat8
-
 

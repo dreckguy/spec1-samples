@@ -33,6 +33,7 @@ source:
     # to create a new EC2 instance in the defined AWS region
     ami:
       - id: ami-f90a4880
+      #- id: ami-0141514361b6a3c1b
         region: eu-west-1
         username: ubuntu
 
