@@ -56,5 +56,5 @@ configuration:
   # the ports defined in the connectivity section
   # to validate it is up
   healthcheck:
-    script: hc.sh
+    wait_for_ports: ALL
     timeout: 180
