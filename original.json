@@ -74,9 +74,9 @@
         "DNS": {
             "Properties": {
                 "HostedZoneConfig": {
-                    "Comment": "hosted zone for sandbox: xtm7qy2lyp02c2"
+                    "Comment": "hosted zone for sandbox: 2fg86qzvop02c2"
                 },
-                "Name": "xtm7qy2lyp02c2.sandbox.com",
+                "Name": "2fg86qzvop02c2.sandbox.com",
                 "VPCs": [
                     {
                         "VPCId": {
@@ -96,31 +96,11 @@
                 "HostedZoneId": {
                     "Ref": "DNS"
                 },
-                "Name": "java-spring-website.xtm7qy2lyp02c2.sandbox.com",
+                "Name": "java-spring-website.2fg86qzvop02c2.sandbox.com",
                 "ResourceRecords": [
                     {
                         "Fn::GetAtt": [
                             "javaspringwebsiteNic",
-                            "PrimaryPrivateIpAddress"
-                        ]
-                    }
-                ],
-                "TTL": 20,
-                "Type": "A"
-            },
-            "Type": "AWS::Route53::RecordSet"
-        },
-        "DNSRecordtorqueSidecar": {
-            "Properties": {
-                "Comment": "DNS name for instance: torqueSidecar.",
-                "HostedZoneId": {
-                    "Ref": "DNS"
-                },
-                "Name": "torqueSidecar.xtm7qy2lyp02c2.sandbox.com",
-                "ResourceRecords": [
-                    {
-                        "Fn::GetAtt": [
-                            "torqueSidecarNic",
                             "PrimaryPrivateIpAddress"
                         ]
                     }
@@ -147,7 +127,7 @@
         },
         "EmptyTG": {
             "Properties": {
-                "Name": "TGxtm7qy2lyp02c2Empty",
+                "Name": "TG2fg86qzvop02c2Empty",
                 "Port": 1,
                 "Protocol": "HTTP",
                 "VpcId": {
@@ -166,6 +146,69 @@
                 ]
             },
             "Type": "AWS::EC2::InternetGateway"
+        },
+        "Listener8080": {
+            "Properties": {
+                "Certificates": [],
+                "DefaultActions": [
+                    {
+                        "TargetGroupArn": {
+                            "Ref": "TG2fg86qzvop02c2H0aa79ec014"
+                        },
+                        "Type": "forward"
+                    }
+                ],
+                "LoadBalancerArn": {
+                    "Ref": "MainALB"
+                },
+                "Port": 8080,
+                "Protocol": "HTTP"
+            },
+            "Type": "AWS::ElasticLoadBalancingV2::Listener"
+        },
+        "MainALB": {
+            "DependsOn": "VpcInternetGatewayAttachment",
+            "Properties": {
+                "Scheme": "internet-facing",
+                "SecurityGroups": [
+                    {
+                        "Ref": "MainALBSG"
+                    }
+                ],
+                "Subnets": [
+                    {
+                        "Ref": "AppSubnet0"
+                    },
+                    {
+                        "Ref": "AppSubnet1"
+                    }
+                ]
+            },
+            "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer"
+        },
+        "MainALBSG": {
+            "Properties": {
+                "GroupDescription": "Attaching an empty security group to the ALB to give instances an access",
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "Description": "public port access",
+                        "FromPort": 8080,
+                        "IpProtocol": "tcp",
+                        "ToPort": 8080
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "MainALBSG"
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::EC2::SecurityGroup"
         },
         "MngSubnet": {
             "Properties": {
@@ -221,6 +264,36 @@
             },
             "Type": "AWS::EC2::Route"
         },
+        "TG2fg86qzvop02c2H0aa79ec014": {
+            "Properties": {
+                "Name": "TG2fg86qzvop02c2H0aa79ec014",
+                "Port": 8080,
+                "Protocol": "HTTP",
+                "Tags": [
+                    {
+                        "Key": "torque-sandbox-id",
+                        "Value": "2fg86qzvop02c2"
+                    }
+                ],
+                "TargetGroupAttributes": [
+                    {
+                        "Key": "deregistration_delay.timeout_seconds",
+                        "Value": "60"
+                    }
+                ],
+                "Targets": [
+                    {
+                        "Id": {
+                            "Ref": "javaspringwebsite"
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VPC"
+                }
+            },
+            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"
+        },
         "VPC": {
             "Properties": {
                 "CidrBlock": "10.0.0.0/16",
@@ -248,8 +321,7 @@
         },
         "javaspringwebsite": {
             "DependsOn": [
-                "DNSRecordjavaspringwebsite",
-                "DNSRecordtorqueSidecar"
+                "DNSRecordjavaspringwebsite"
             ],
             "Properties": {
                 "ImageId": "ami-f90a4880",
@@ -273,8 +345,25 @@
                         "Value": "java-spring-website"
                     },
                     {
+                        "Key": "torque-external-elb-dsn",
+                        "Value": {
+                            "Fn::GetAtt": [
+                                "MainALB",
+                                "DNSName"
+                            ]
+                        }
+                    },
+                    {
+                        "Key": "torque-external-ports",
+                        "Value": "java-spring-website:8080"
+                    },
+                    {
                         "Key": "torque-instance-logical-id",
-                        "Value": "3f5aa034e5654c6888fb330cd57ddcb8"
+                        "Value": "822396cdf14847fca9ca5ba776ce5c6f"
+                    },
+                    {
+                        "Key": "torque-internal-ports",
+                        "Value": "java-spring-website:8080"
                     }
                 ],
                 "UserData": {
@@ -300,14 +389,8 @@
                                 "which wget > /dev/null || (yum install wget -y);\n",
                                 "fi;\n",
                                 "\n",
-                                "\n wget https://torque-production-public.s3-eu-central-1.amazonaws.com/helper/helper_v001.sh -T 5 -t 2 -O /usr/local/bin/torque.sh;\nchmod +x /usr/local/bin/torque.sh;\ntype torque.sh> /dev/null 2>&1 || echo \"torque.sh not found in PATH\";\necho \"export COLONY_SIDECAR_API=\"http://torqueSidecar.xtm7qy2lyp02c2.sandbox.com:4000/\"\" >> /etc/environment;\n            \n",
-                                "echo \"[cs18][$(date +\"%T.%3N\")] going to check if sidecar api is ready\";\n",
-                                "echo \"[$(date +\"%T.%3N\")] waiting for sidecar dns resolution\"; until DNS_RESOLUTION_RESULT=$(getent hosts torqueSidecar.xtm7qy2lyp02c2.sandbox.com) ; do echo \"[$(date +\"%T.%3N\")] sidecar dns not resolved, waiting ...\"; sleep 10; done;echo \"[$(date +\"%T.%3N\")] sidecar dns resolved!\"; echo \"$DNS_RESOLUTION_RESULT\" >> /etc/hosts;echo \"[$(date +\"%T.%3N\")] waiting for sidecar api\"; while [ 0 ]; do config_start_status=$(wget --tries=1 -T 10 -nv -O- torqueSidecar.xtm7qy2lyp02c2.sandbox.com:4000/ 2>&1); if [ \"$?\" -eq \"0\" ]; then echo \"[$(date +\"%T.%3N\")] sidecar api is ready\"; break; fi; echo \"[$(date +\"%T.%3N\")] sidecar api is not ready yet\";echo $config_start_status; sleep 10; done;\n",
-                                "echo \"[cs18][$(date +\"%T.%3N\")] going to check if sidecar ftp is ready\";\n",
-                                "echo \"fetching from sidecar text.txt..\"\nwhile true;do \nwget -T 15 -nH ftp://torqueSidecar.xtm7qy2lyp02c2.sandbox.com/text.txt -O /root/text.txt && break;\nsleep 1;\ndone;\n",
-                                "echo \"fetching from sidecar xtm7qy2lyp02c2_8ce0ea4880d94bbabbb6b2f4d64c8a9d.userdata..\"\nwhile true;do \nwget -T 15 -nH ftp://torqueSidecar.xtm7qy2lyp02c2.sandbox.com/xtm7qy2lyp02c2_8ce0ea4880d94bbabbb6b2f4d64c8a9d.userdata -O /root/xtm7qy2lyp02c2_8ce0ea4880d94bbabbb6b2f4d64c8a9d.userdata && break;\nsleep 1;\ndone;\n",
-                                "chmod +x /root/xtm7qy2lyp02c2_8ce0ea4880d94bbabbb6b2f4d64c8a9d.userdata\n",
-                                "/root/xtm7qy2lyp02c2_8ce0ea4880d94bbabbb6b2f4d64c8a9d.userdata\n",
+                                "chmod +x /root/2fg86qzvop02c2_11ff19aa8ca14fe6b72c632e674489c1.userdata\n",
+                                "/root/2fg86qzvop02c2_11ff19aa8ca14fe6b72c632e674489c1.userdata\n",
                                 "echo \"[cs18][$(date +\"%T.%3N\")] end of java-spring-website user-data\";\n"
                             ]
                         ]
@@ -338,12 +421,6 @@
                 "SecurityGroupEgress": [],
                 "SecurityGroupIngress": [
                     {
-                        "IpProtocol": "-1",
-                        "SourceSecurityGroupId": {
-                            "Ref": "torqueSidecarSG"
-                        }
-                    },
-                    {
                         "FromPort": 22,
                         "IpProtocol": "tcp",
                         "SourceSecurityGroupId": {
@@ -360,10 +437,20 @@
                         "ToPort": 3389
                     },
                     {
-                        "IpProtocol": "-1",
+                        "FromPort": 8080,
+                        "IpProtocol": "tcp",
+                        "SourceSecurityGroupId": {
+                            "Ref": "MainALBSG"
+                        },
+                        "ToPort": 8080
+                    },
+                    {
+                        "FromPort": 8080,
+                        "IpProtocol": "tcp",
                         "SourceSecurityGroupId": {
                             "Ref": "DefaultSandboxSG"
-                        }
+                        },
+                        "ToPort": 8080
                     }
                 ],
                 "VpcId": {
@@ -371,89 +458,6 @@
                 }
             },
             "Type": "AWS::EC2::SecurityGroup"
-        },
-        "sidecarInstanceProfile": {
-            "Properties": {
-                "InstanceProfileName": "torque-sandbox-sidecar-role-xtm7qy2lyp02c2",
-                "Path": "/torque/1ba6c10d-fac8-48d5-97c3-8b14a20a50ba/sandbox/xtm7qy2lyp02c2/",
-                "Roles": [
-                    {
-                        "Ref": "sidecarRole"
-                    }
-                ]
-            },
-            "Type": "AWS::IAM::InstanceProfile"
-        },
-        "sidecarRole": {
-            "Properties": {
-                "AssumeRolePolicyDocument": {
-                    "Statement": [
-                        {
-                            "Action": "sts:AssumeRole",
-                            "Effect": "Allow",
-                            "Principal": {
-                                "Service": "ec2.amazonaws.com"
-                            }
-                        }
-                    ],
-                    "Version": "2012-10-17"
-                },
-                "ManagedPolicyArns": [
-                    "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
-                    "arn:aws:iam::aws:policy/AWSCloudFormationReadOnlyAccess",
-                    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-                ],
-                "Path": "/torque/1ba6c10d-fac8-48d5-97c3-8b14a20a50ba/sandbox/xtm7qy2lyp02c2/",
-                "Policies": [
-                    {
-                        "PolicyDocument": {
-                            "Statement": [
-                                {
-                                    "Action": [
-                                        "dynamodb:GetItem",
-                                        "dynamodb:Query",
-                                        "dynamodb:UpdateItem"
-                                    ],
-                                    "Condition": {
-                                        "ForAllValues:StringEquals": {
-                                            "dynamodb:LeadingKeys": "xtm7qy2lyp02c2"
-                                        }
-                                    },
-                                    "Effect": "Allow",
-                                    "Resource": [
-                                        "arn:aws:dynamodb:*:*:table/torque-sandboxes-datatable-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba",
-                                        "arn:aws:dynamodb:*:*:table/torque-sandboxes-datatable"
-                                    ]
-                                }
-                            ],
-                            "Version": "2012-10-17"
-                        },
-                        "PolicyName": "TorqueSandboxDynamoDBAccess"
-                    },
-                    {
-                        "PolicyDocument": {
-                            "Statement": [
-                                {
-                                    "Action": [
-                                        "s3:Get*",
-                                        "s3:List*",
-                                        "s3:Put*"
-                                    ],
-                                    "Effect": "Allow",
-                                    "Resource": [
-                                        "arn:aws:s3:::torque-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba",
-                                        "arn:aws:s3:::torque-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba/*"
-                                    ]
-                                }
-                            ],
-                            "Version": "2012-10-17"
-                        },
-                        "PolicyName": "TorqueSandboxS3Access"
-                    }
-                ],
-                "RoleName": "torque-sandbox-sidecar-role-xtm7qy2lyp02c2"
-            },
-            "Type": "AWS::IAM::Role"
         },
         "torqueDebugService": {
             "Properties": {
@@ -492,174 +496,6 @@
                         "FromPort": 8080,
                         "IpProtocol": "tcp",
                         "ToPort": 8080
-                    }
-                ],
-                "VpcId": {
-                    "Ref": "VPC"
-                }
-            },
-            "Type": "AWS::EC2::SecurityGroup"
-        },
-        "torqueSidecar": {
-            "Properties": {
-                "BlockDeviceMappings": [
-                    {
-                        "DeviceName": "/dev/sda1",
-                        "Ebs": {
-                            "DeleteOnTermination": "true",
-                            "Encrypted": "false",
-                            "VolumeSize": 18
-                        }
-                    }
-                ],
-                "IamInstanceProfile": {
-                    "Ref": "sidecarInstanceProfile"
-                },
-                "ImageId": "ami-06453e321410d9a3d",
-                "InstanceType": "t3.medium",
-                "KeyName": "ophirus",
-                "NetworkInterfaces": [
-                    {
-                        "DeviceIndex": 0,
-                        "NetworkInterfaceId": {
-                            "Ref": "torqueSidecarNic"
-                        }
-                    }
-                ],
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": "torqueSidecar"
-                    },
-                    {
-                        "Key": "torque-app-name",
-                        "Value": "torqueSidecar"
-                    }
-                ],
-                "UserData": {
-                    "Fn::Base64": {
-                        "Fn::Join": [
-                            "",
-                            [
-                                "#!/bin/bash\n",
-                                "echo \"[cs18][$(date +\"%T.%3N\")] start of sidecar user-data.\";\n",
-                                "region_name=",
-                                {
-                                    "Ref": "AWS::Region"
-                                },
-                                "\n",
-                                "colony_environment=qtorque\n",
-                                "colony_application=sidecar\n",
-                                "colony_sandbox_id=xtm7qy2lyp02c2\n",
-                                "logz_token=xmJURUHwcxUGtgPpHHnhbTFqfLDBzUPi\n",
-                                "##!/bin/bash\n",
-                                "#colony_environment=env_name\n",
-                                "#colony_sandbox_id=sandbox_id\n",
-                                "#colony_application=application_name\n",
-                                "#logz_token=TOKEN\n",
-                                "#logz_event_type=event_type\n",
-                                "\n",
-                                "error_report() {\n",
-                                "echo \"$1\"\n",
-                                "send_log \"$1\" ERROR\n",
-                                "}\n",
-                                "\n",
-                                "info_report() {\n",
-                                "send_log \"$1\" INFO\n",
-                                "}\n",
-                                "\n",
-                                "generate_post_data(){\n",
-                                "message=\"$1\"\n",
-                                "log_level=\"$2\"\n",
-                                "message=\"${message//\\\"/\\\\\\\"}\"\n",
-                                "cat <<EOF\n",
-                                "{\n",
-                                "  \"colony.environment\": \"$colony_environment\",\n",
-                                "  \"colony.sandbox_id\": \"$colony_sandbox_id\",\n",
-                                "  \"colony.application\": \"$colony_application\",\n",
-                                "  \"colony.level\": \"$log_level\",\n",
-                                "  \"message\": \"$message\"\n",
-                                "}\n",
-                                "EOF\n",
-                                "}\n",
-                                "\n",
-                                "\n",
-                                "send_log() {\n",
-                                "data=$(generate_post_data \"$1\" \"$2\")\n",
-                                "data=$(echo \"$data\" | tr \"\\n\\r\" \" \")\n",
-                                "curl -d \"$data\" -H \"Content-type:application/json\" --data-urlencode -XPOST https://http-bulk-listener.logz.io:443/?token=$logz_token\n",
-                                "}\n",
-                                "\n",
-                                "log_command(){\n",
-                                "err=$($1 2>&1)\n",
-                                "if [[ $? -ne 0 ]]; then\n",
-                                "  error_report \"$err\"\n",
-                                "fi\n",
-                                "}\n",
-                                "sandbox_vpc=",
-                                {
-                                    "Ref": "VPC"
-                                },
-                                "\n",
-                                "bash -c \"cat > ~/sidecar.sh\" <<\"EOL\"\n",
-                                "#!/bin/bash\n~/restart_filebeat.sh\naws s3 cp s3://torque-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba/sandbox-xtm7qy2lyp02c2/xtm7qy2lyp02c2.userdata ~/sidecar_userdata.sh\nchmod +x ~/sidecar_userdata.sh\nregion_name=$region_name ~/sidecar_userdata.sh\n\n",
-                                "EOL\n",
-                                "chmod +x ~/sidecar.sh\n",
-                                "docker login -u qualitorque -p a25e930b-47be-41c3-8104-988f85e97a0e\n",
-                                "retry_count=10\n",
-                                "for i in $(seq 1 $retry_count); do\n",
-                                "docker_run_output=$(docker run --name sidecar -d --net=host -p 21:21 -p 4000:4000 -v \"/root/sidecar.sh:/sidecar.sh\" -e region_name=$region_name -e virtual_network_id=$sandbox_vpc -e COLONY_SANDBOX_ID=xtm7qy2lyp02c2 -e COLONY_PRODUCTION_ID= -e COLONY_ENVIRONMENT=qtorque -e LOGZIO_TOKEN=xmJURUHwcxUGtgPpHHnhbTFqfLDBzUPi -e BRANDING=torque quali/sidecar:0.0.3.928 bash -c \"/sidecar.sh 2>&1 | tee /var/log/sidecar-userdata-output.log\" 2>&1)\n",
-                                "if [[ $? -ne 0 ]]; then error_report \"Failed to launch sidecar container. try $i/$retry_count\ndocker run output: $docker_run_output\napt list | grep docker: $(apt list | grep docker 2>&1)\nenv: $(env)\nls -l /usr/local/bin/docker: $(ls -l /usr/local/bin/docker 2>&1)\";else break;fi\n",
-                                "sleep 2; done;\n",
-                                "echo \"[cs18][$(date +\"%T.%3N\")] end of sidecar user-data.\";\n"
-                            ]
-                        ]
-                    }
-                }
-            },
-            "Type": "AWS::EC2::Instance"
-        },
-        "torqueSidecarNic": {
-            "Properties": {
-                "GroupSet": [
-                    {
-                        "Ref": "torqueSidecarSG"
-                    },
-                    {
-                        "Ref": "DefaultSandboxSG"
-                    }
-                ],
-                "SubnetId": {
-                    "Ref": "MngSubnet"
-                }
-            },
-            "Type": "AWS::EC2::NetworkInterface"
-        },
-        "torqueSidecarSG": {
-            "Properties": {
-                "GroupDescription": "torqueSidecar Security Group",
-                "SecurityGroupIngress": [
-                    {
-                        "IpProtocol": "-1",
-                        "SourceSecurityGroupId": {
-                            "Ref": "DefaultSandboxSG"
-                        }
-                    },
-                    {
-                        "FromPort": 22,
-                        "IpProtocol": "tcp",
-                        "SourceSecurityGroupId": {
-                            "Ref": "torqueDebugServiceSG"
-                        },
-                        "ToPort": 22
-                    },
-                    {
-                        "FromPort": 4000,
-                        "IpProtocol": "tcp",
-                        "SourceSecurityGroupId": {
-                            "Ref": "torqueDebugServiceSG"
-                        },
-                        "ToPort": 4000
                     }
                 ],
                 "VpcId": {
