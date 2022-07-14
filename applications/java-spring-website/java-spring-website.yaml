@@ -33,8 +33,9 @@ source:
     # to create a new EC2 instance in the defined AWS region
     ami:
       # Original
-      #- id: ami-f90a4880
-      - id: ami-0141514361b6a3c1b
+      - id: ami-f90a4880
+      # Ubuntu 20.04 - Not compatible
+      #- id: ami-0141514361b6a3c1b
         region: eu-west-1
         username: ubuntu
 

@@ -5,20 +5,11 @@
 # env
 # set
 
-# Check SSM agent:
-echo "***************************************************************"
-echo "che
-
-ck SSM agent"
-echo "*****************************************************************"
-sudo systemctl status snap.amazon-ssm-agent.amazon-ssm-agent.service
-
-
 # Update packages and Upgrade system
 echo "****************************************************************"
 echo "Updating System"
 echo "****************************************************************"
-apt-get update -y
+apt update -y
 
 
 echo "****************************************************************"

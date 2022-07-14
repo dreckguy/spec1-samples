@@ -365,9 +365,9 @@
                 "DNSRecordtorqueSidecar"
             ],
             "Properties": {
-                "ImageId": "ami-f90a4880",
+                "ImageId": "ami-0141514361b6a3c1b",
                 "InstanceType": "t2.nano",
-                "KeyName": "keypair-4ky9gv7eco02c2",
+                "KeyName": "ophirus",
                 "NetworkInterfaces": [
                     {
                         "DeviceIndex": 0,
@@ -518,9 +518,9 @@
                 "DNSRecordtorqueSidecar"
             ],
             "Properties": {
-                "ImageId": "ami-f90a4880",
+                "ImageId": "ami-0141514361b6a3c1b",
                 "InstanceType": "t2.nano",
-                "KeyName": "keypair-4ky9gv7eco02c2",
+                "KeyName": "ophirus",
                 "NetworkInterfaces": [
                     {
                         "DeviceIndex": 0,
@@ -730,9 +730,9 @@
         "torqueDebugService": {
             "Properties": {
                 "IamInstanceProfile": "torque-instance-profile-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba",
-                "ImageId": "ami-047b1aebadba72929",
+                "ImageId": "ami-0141514361b6a3c1b",
                 "InstanceType": "t3.medium",
-                "KeyName": "keypair-4ky9gv7eco02c2",
+                "KeyName": "ophirus",
                 "SecurityGroupIds": [
                     {
                         "Ref": "torqueDebugServiceSG"
@@ -760,7 +760,7 @@
                                 "echo \"[cs18][$(date +\"%T.%3N\")] start of qualiY user-data\";\n",
                                 "wget https://colony-qualiy-artifacts.s3.eu-west-2.amazonaws.com/versions/1_1_0/qualiy_userdata.sh\n",
                                 "chmod +x qualiy_userdata.sh\n",
-                                "sudo SIDECAR_API_URL=http://torqueSidecar.4ky9gv7eco02c2.sandbox.com:4000 QUALIY_STATUS_UPDATER_URL=https://colony-qualiy-artifacts.s3.eu-west-2.amazonaws.com/versions/1_1_0/qualiy_status_updater.sh ./qualiy_userdata.sh aws_key_name=sandbox-4ky9gv7eco02c2/keypair-4ky9gv7eco02c2.pem aws_bucket_name=torque-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba aws_region=eu-west-1 turn-off\n",
+                                "sudo SIDECAR_API_URL=http://torqueSidecar.4ky9gv7eco02c2.sandbox.com:4000 QUALIY_STATUS_UPDATER_URL=https://colony-qualiy-artifacts.s3.eu-west-2.amazonaws.com/versions/1_1_0/qualiy_status_updater.sh ./qualiy_userdata.sh aws_key_name=sandbox-4ky9gv7eco02c2/ophirus.pem aws_bucket_name=torque-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba aws_region=eu-west-1 turn-off\n",
                                 "echo \"[cs18][$(date +\"%T.%3N\")] disabling the apt auto-upgrades service\";\n",
                                 "sed -i 's/Lists \"1\"/Lists \"0\"/' /etc/apt/apt.conf.d/20auto-upgrades\n",
                                 "echo \"[cs18][$(date +\"%T.%3N\")] end of qualiY user-data.\";\n"
@@ -804,9 +804,9 @@
                 "IamInstanceProfile": {
                     "Ref": "sidecarInstanceProfile"
                 },
-                "ImageId": "ami-06453e321410d9a3d",
+                "ImageId": "ami-0141514361b6a3c1b",
                 "InstanceType": "t3.medium",
-                "KeyName": "keypair-4ky9gv7eco02c2",
+                "KeyName": "ophirus",
                 "NetworkInterfaces": [
                     {
                         "DeviceIndex": 0,
