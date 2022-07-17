@@ -419,22 +419,8 @@
                 "GroupDescription": "java-spring-website Security Group",
                 "SecurityGroupEgress": [],
                 "SecurityGroupIngress": [
-                    {
-                        "FromPort": 22,
-                        "IpProtocol": "tcp",
-                        "SourceSecurityGroupId": {
-                            "Ref": "torqueDebugServiceSG"
-                        },
-                        "ToPort": 22
-                    },
-                    {
-                        "FromPort": 3389,
-                        "IpProtocol": "tcp",
-                        "SourceSecurityGroupId": {
-                            "Ref": "torqueDebugServiceSG"
-                        },
-                        "ToPort": 3389
-                    },
+                    
+                   
                     {
                         "FromPort": 8080,
                         "IpProtocol": "tcp",
@@ -449,51 +435,6 @@
                         "SourceSecurityGroupId": {
                             "Ref": "DefaultSandboxSG"
                         },
-                        "ToPort": 8080
-                    }
-                ],
-                "VpcId": {
-                    "Ref": "VPC"
-                }
-            },
-            "Type": "AWS::EC2::SecurityGroup"
-        },
-        "torqueDebugService": {
-            "Properties": {
-                "IamInstanceProfile": "torque-instance-profile-1ba6c10d-fac8-48d5-97c3-8b14a20a50ba",
-                "ImageId": "ami-047b1aebadba72929",
-                "InstanceType": "t3.medium",
-                "KeyName": "ophirus",
-                "SecurityGroupIds": [
-                    {
-                        "Ref": "torqueDebugServiceSG"
-                    }
-                ],
-                "SubnetId": {
-                    "Ref": "MngSubnet"
-                },
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": "torqueDebugService"
-                    },
-                    {
-                        "Key": "torque-app-name",
-                        "Value": "torqueDebugService"
-                    }
-                ]
-            },
-            "Type": "AWS::EC2::Instance"
-        },
-        "torqueDebugServiceSG": {
-            "Properties": {
-                "GroupDescription": "torqueDebugService Security Group",
-                "SecurityGroupIngress": [
-                    {
-                        "CidrIp": "0.0.0.0/0",
-                        "Description": "public port access",
-                        "FromPort": 8080,
-                        "IpProtocol": "tcp",
                         "ToPort": 8080
                     }
                 ],
