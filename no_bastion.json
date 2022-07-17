@@ -1,5 +1,5 @@
 {
-    "Description": "Triggered By Torque (Blueprint: spec1-in-spec2, Owner: ophir.h@quali.com) - A Java Spring website deployed on a TomCat server and MySQL database\n",
+    "Description": "Imitation of Torque spec1 sandbox\n",
     "Resources": {
         "AppSubnet0": {
             "Properties": {
