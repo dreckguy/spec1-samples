@@ -326,7 +326,7 @@
             "Properties": {
                 "ImageId": "ami-f90a4880",
                 "InstanceType": "t2.nano",
-                "KeyName": "ophirus",
+                "KeyName": "key",
                 "NetworkInterfaces": [
                     {
                         "DeviceIndex": 0,
